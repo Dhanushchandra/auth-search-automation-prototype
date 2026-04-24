@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Final Page</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div
+      class="container d-flex justify-content-center align-items-center vh-100"
+    >
+      <div class="card shadow p-4 text-center" style="width: 400px">
+        <h2 class="mb-3">Search Result Page</h2>
+
+        <p id="result" class="text-muted"></p>
+
+        <button
+          id="submitBtn"
+          class="btn btn-success w-100"
+          onclick="handleSubmit()"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get("query");
+
+      document.getElementById("result").innerText = query
+        ? `You searched for: ${query}`
+        : "No search query";
+
+      function handleSubmit() {
+        // alert("Submitted successfully!");
+        document.getElementById("result").innerText = "Submitted successfully!";
+      }
+    </script>
+  </body>
+</html>
