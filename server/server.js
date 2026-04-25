@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -15,28 +16,51 @@ app.get("/", (req, res) => {
 });
 
 app.post("/run-test", (req, res) => {
-  const { username, password, search } = req.body;
+  const { username, password, search, context } = req.body;
 
-  const command = `npx cross-env TEST_USERNAME="${username}" TEST_PASSWORD="${password}" TEST_SEARCH="${search}" playwright test`;
-
-  console.log("Running command:", command); // 👈 debug log
-
-  exec(command, { cwd: __dirname + "/.." }, (error, stdout, stderr) => {
-    const passed = stdout.includes("passed");
-    const failed = stdout.includes("failed");
-
-    if (error || failed) {
-      return res.status(500).json({
-        status: "failed",
-        details: stdout || stderr,
-      });
-    }
-
-    res.json({
-      status: "passed",
-      details: stdout,
+  // ✅ Validate input (basic)
+  if (!username || !password || !search) {
+    return res.status(400).json({
+      status: "error",
+      message: "Missing required fields",
     });
-  });
+  }
+
+  console.log("Incoming request:", { username, search, context });
+
+  exec(
+    "npx playwright test",
+    {
+      cwd: path.join(__dirname, ".."),
+      env: {
+        ...process.env,
+        TEST_USERNAME: username,
+        TEST_PASSWORD: password,
+        TEST_SEARCH: search,
+        TEST_CONTEXT: JSON.stringify(context || {}),
+      },
+    },
+    (error, stdout, stderr) => {
+      console.log("STDOUT:\n", stdout);
+      console.log("STDERR:\n", stderr);
+
+      const passed = stdout.includes("passed");
+      const failed = stdout.includes("failed");
+
+      if (error || failed) {
+        return res.status(500).json({
+          status: "failed",
+          error: error?.message,
+          details: stdout || stderr,
+        });
+      }
+
+      res.json({
+        status: "passed",
+        details: stdout,
+      });
+    },
+  );
 });
 
 app.post("/inspect", (req, res) => {

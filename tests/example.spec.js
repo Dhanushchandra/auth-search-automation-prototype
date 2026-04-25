@@ -5,29 +5,29 @@ test("API triggered flow", async ({ browser }) => {
   const password = process.env.TEST_PASSWORD;
   const search = process.env.TEST_SEARCH;
 
-  // ✅ Create custom context
+  // 🔥 Parse dynamic context
+  const rawContext = process.env.TEST_CONTEXT;
+  let contextConfig = {};
+  try {
+    contextConfig = rawContext ? JSON.parse(rawContext) : {};
+  } catch (e) {
+    console.error("Invalid TEST_CONTEXT JSON");
+  }
+
+  // ✅ Create context dynamically
   const context = await browser.newContext({
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-    locale: "en-US",
-    extraHTTPHeaders: {
-      "accept-language": "en-US,en;q=0.9",
-    },
+    ...contextConfig,
   });
 
-  await context.addInitScript(() => {
-    const original = Intl.DateTimeFormat.prototype.resolvedOptions;
-    Intl.DateTimeFormat.prototype.resolvedOptions = function () {
-      const result = original.call(this);
-      result.timeZone = "Asia/Kolkata";
-      return result;
-    };
-  });
-
-  // ✅ Create page from this context
   const page = await context.newPage();
 
   await page.goto("http://localhost:5500/client/index.html");
+
+  // Debug
+  const tz = await page.evaluate(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
+  console.log("Browser timezone:", tz);
 
   // Type like a human
   await page.locator("#username").pressSequentially(username, {
@@ -39,7 +39,6 @@ test("API triggered flow", async ({ browser }) => {
 
   await page.waitForTimeout(Math.random() * 500 + 300);
 
-  // Hover + click instead of static mouse move
   const loginBtn = page.locator("button[type='submit']");
   await loginBtn.hover();
   await loginBtn.click();
