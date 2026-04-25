@@ -6,9 +6,13 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
+// Load user and profile data
+
 const users = require("../data/users.json");
 const profiles = require("../data/reqProfiles.json");
 const mapPath = path.join(__dirname, "../data/userProfileMap.json");
+
+//---MIDDLEWARE
 
 const app = express();
 app.use(cors());
@@ -16,6 +20,8 @@ app.use(express.json());
 
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
+
+//-----HELPER FUNCTIONS FOR PROFILE MANAGEMENT-----
 
 function loadMap() {
   try {
@@ -81,6 +87,8 @@ function getProfileForUser(user, map) {
 
   return profile;
 }
+
+//-----API ENDPOINTS-----
 
 app.get("/", (req, res) => {
   res.send("Hello! Use POST /run-test to execute the test.");
@@ -162,8 +170,48 @@ app.post("/inspect", (req, res) => {
   });
 });
 
+// app.post("/submit", async (req, res) => {
+//   const { search, count } = req.body;
+//   const map = loadMap();
+//   const selectedUsers = users.slice(0, count);
+
+//   const executions = selectedUsers.map((user) => ({
+//     username: user.username,
+//     password: user.password,
+//     search,
+//     context: getProfileForUser(user, map),
+//   }));
+
+//   const results = [];
+//   console.log("Executions count:", executions.length);
+//   for (const execData of executions) {
+//     try {
+//       const response = await axios.post(
+//         "http://localhost:3005/run-test",
+//         execData,
+//       );
+//       results.push(response.data);
+//     } catch (err) {
+//       results.push({ error: err.message });
+//     }
+//   }
+
+//   // run in parallel
+//   // const promises = executions.map((execData) =>
+//   //   axios.post("http://localhost:3005/run-test", execData),
+//   // );
+
+//   // const results = await Promise.allSettled(promises);
+
+//   res.json({
+//     message: "Automation executed",
+//     results,
+//   });
+// });
+
 app.post("/submit", async (req, res) => {
   const { search, count } = req.body;
+
   const map = loadMap();
   const selectedUsers = users.slice(0, count);
 
@@ -174,26 +222,42 @@ app.post("/submit", async (req, res) => {
     context: getProfileForUser(user, map),
   }));
 
+  saveMap(map); // ✅ save once after processing all users
+
   const results = [];
+
   console.log("Executions count:", executions.length);
+
+  // 🔹 helper sleep
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   for (const execData of executions) {
     try {
+      // random delay (500ms → 2500ms)
+      const delay = Math.floor(Math.random() * 2000) + 500;
+      console.log(`Waiting ${delay}ms before triggering ${execData.username}`);
+      await sleep(delay);
+
+      console.log("Triggering for:", execData.username);
+
       const response = await axios.post(
         "http://localhost:3005/run-test",
         execData,
       );
-      results.push(response.data);
+
+      results.push({
+        user: execData.username,
+        status: "success",
+        data: response.data,
+      });
     } catch (err) {
-      results.push({ error: err.message });
+      results.push({
+        user: execData.username,
+        status: "failed",
+        error: err.message,
+      });
     }
   }
-
-  // run in parallel
-  // const promises = executions.map((execData) =>
-  //   axios.post("http://localhost:3005/run-test", execData),
-  // );
-
-  // const results = await Promise.allSettled(promises);
 
   res.json({
     message: "Automation executed",

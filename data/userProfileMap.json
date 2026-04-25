@@ -1,20 +1,20 @@
 {
   "1": {
     "profileId": "profile_win_mid",
-    "lastActive": 1777141785518,
+    "lastActive": 1777144932076,
     "lastSwitched": 1777141662135,
-    "sessionCount": 1
+    "sessionCount": 2
   },
   "2": {
     "profileId": "profile_win_small",
-    "lastActive": 1777141785518,
+    "lastActive": 1777144932076,
     "lastSwitched": 1777141662136,
-    "sessionCount": 1
+    "sessionCount": 2
   },
   "3": {
     "profileId": "profile_win_laptop",
-    "lastActive": 1777141785520,
+    "lastActive": 1777144932076,
     "lastSwitched": 1777141662137,
-    "sessionCount": 1
+    "sessionCount": 2
   }
 }
