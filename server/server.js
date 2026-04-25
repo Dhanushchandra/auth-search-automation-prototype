@@ -2,11 +2,13 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 const cors = require("cors");
+const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
 const users = require("../data/users.json");
 const profiles = require("../data/reqProfiles.json");
+const mapPath = path.join(__dirname, "../data/userProfileMap.json");
 
 const app = express();
 app.use(cors());
@@ -15,28 +17,69 @@ app.use(express.json());
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
 
-const userProfileMap = new Map();
+function loadMap() {
+  try {
+    return JSON.parse(fs.readFileSync(mapPath, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveMap(map) {
+  fs.writeFileSync(mapPath, JSON.stringify(map, null, 2));
+}
 
 function pickRandomProfile() {
   return profiles[Math.floor(Math.random() * profiles.length)];
 }
 
-function getProfileForUser(user) {
-  // First time → assign
-  if (!userProfileMap.has(user.id)) {
+function getProfileById(id) {
+  return profiles.find((p) => p.id === id);
+}
+
+function getProfileForUser(user, map) {
+  const now = Date.now();
+
+  const INACTIVITY_LIMIT = 15 * 60 * 1000;
+  const SWITCH_COOLDOWN = 60 * 60 * 1000;
+
+  if (!map[user.id]) {
     const profile = pickRandomProfile();
-    userProfileMap.set(user.id, profile);
+
+    map[user.id] = {
+      profileId: profile.id,
+      lastActive: now,
+      lastSwitched: now,
+      sessionCount: 1,
+    };
+
     return profile;
   }
 
-  // 80% same, 20% change
-  if (Math.random() < 0.95) {
-    return userProfileMap.get(user.id); // 95% same
-  } else {
-    const newProfile = pickRandomProfile();
-    userProfileMap.set(user.id, newProfile);
-    return newProfile;
+  const record = map[user.id];
+  const inactiveTime = now - record.lastActive;
+
+  record.lastActive = now;
+
+  let profile = getProfileById(record.profileId);
+
+  if (inactiveTime > INACTIVITY_LIMIT) {
+    record.sessionCount += 1;
+
+    const timeSinceSwitch = now - record.lastSwitched;
+
+    if (timeSinceSwitch > SWITCH_COOLDOWN && Math.random() < 0.05) {
+      const newProfile = pickRandomProfile();
+
+      if (newProfile.id !== record.profileId) {
+        record.profileId = newProfile.id;
+        record.lastSwitched = now;
+        profile = newProfile;
+      }
+    }
   }
+
+  return profile;
 }
 
 app.get("/", (req, res) => {
@@ -121,18 +164,18 @@ app.post("/inspect", (req, res) => {
 
 app.post("/submit", async (req, res) => {
   const { search, count } = req.body;
-
+  const map = loadMap();
   const selectedUsers = users.slice(0, count);
 
   const executions = selectedUsers.map((user) => ({
     username: user.username,
     password: user.password,
     search,
-    context: getProfileForUser(user),
+    context: getProfileForUser(user, map),
   }));
 
   const results = [];
-
+  console.log("Executions count:", executions.length);
   for (const execData of executions) {
     try {
       const response = await axios.post(
