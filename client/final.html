@@ -35,9 +35,40 @@
         ? `You searched for: ${query}`
         : "No search query";
 
-      function handleSubmit() {
-        // alert("Submitted successfully!");
-        document.getElementById("result").innerText = "Submitted successfully!";
+      async function handleSubmit() {
+        const params = new URLSearchParams(window.location.search);
+        const query = params.get("query");
+
+        const payload = {
+          query,
+          timestamp: new Date().toISOString(),
+          screen: {
+            width: window.screen.width,
+            height: window.screen.height,
+          },
+          navigator: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack,
+            maxTouchPoints: navigator.maxTouchPoints,
+          },
+        };
+
+        const res = await fetch("http://127.0.0.1:3005/inspect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        alert("Sent to backend ✅");
       }
     </script>
   </body>

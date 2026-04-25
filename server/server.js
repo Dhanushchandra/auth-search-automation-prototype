@@ -1,8 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { exec } = require("child_process");
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use(bodyParser.urlencoded());
@@ -34,6 +36,34 @@ app.post("/run-test", (req, res) => {
       status: "passed",
       details: stdout,
     });
+  });
+});
+
+app.post("/inspect", (req, res) => {
+  const headers = req.headers;
+
+  const fingerprint = {
+    userAgent: headers["user-agent"],
+    acceptLanguage: headers["accept-language"],
+    referer: headers["referer"],
+    ip: req.ip,
+    forwarded: headers["x-forwarded-for"],
+  };
+
+  console.log("=== HEADERS ===");
+  console.log(headers);
+
+  console.log("=== FINGERPRINT ===");
+  console.log(fingerprint);
+
+  console.log("=== BODY ===");
+  console.log(req.body);
+
+  res.json({
+    message: "Captured successfully",
+    headers,
+    fingerprint,
+    body: req.body,
   });
 });
 
