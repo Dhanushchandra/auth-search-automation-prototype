@@ -64,15 +64,24 @@ app.post("/submit", async (req, res) => {
   for (const user of users) {
     const context = await getProfileForUser(user);
 
-    await automationQueue.add("user-automation", {
-      batchId,
-      execData: {
-        username: user.username,
-        password: user.password,
-        search,
-        context,
+    await automationQueue.add(
+      "user-automation",
+      {
+        batchId,
+        execData: {
+          username: user.username,
+          password: user.password,
+          search,
+          context,
+        },
       },
-    });
+      {
+        timeout: 60000,
+        retry: 1,
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
+    );
   }
 
   res.json({

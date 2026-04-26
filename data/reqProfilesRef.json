@@ -1,0 +1,92 @@
+[
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf1c"
+        },
+        "profileId": "win_india",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "locale": "en-IN",
+            "timezoneId": "Asia/Kolkata",
+            "viewport": {
+                "width": 1366,
+                "height": 768
+            }
+        }
+    },
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf1d"
+        },
+        "profileId": "win_us",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
+            "locale": "en-US",
+            "timezoneId": "America/New_York",
+            "viewport": {
+                "width": 1920,
+                "height": 1080
+            }
+        }
+    },
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf1e"
+        },
+        "profileId": "mac_us",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "locale": "en-US",
+            "timezoneId": "America/Los_Angeles",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            }
+        }
+    },
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf1f"
+        },
+        "profileId": "mac_eu",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/537.36 Chrome/118.0.0.0 Safari/537.36",
+            "locale": "en-GB",
+            "timezoneId": "Europe/London",
+            "viewport": {
+                "width": 1536,
+                "height": 864
+            }
+        }
+    },
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf20"
+        },
+        "profileId": "win_small_us",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117.0.0.0 Safari/537.36",
+            "locale": "en-US",
+            "timezoneId": "America/Chicago",
+            "viewport": {
+                "width": 1280,
+                "height": 800
+            }
+        }
+    },
+    {
+        "_id": {
+            "$oid": "69ee5da7030071fc0caeaf21"
+        },
+        "profileId": "mac_india",
+        "config": {
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "locale": "en-IN",
+            "timezoneId": "Asia/Kolkata",
+            "viewport": {
+                "width": 1440,
+                "height": 900
+            }
+        }
+    }
+]
