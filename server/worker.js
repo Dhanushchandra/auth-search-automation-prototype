@@ -2,6 +2,7 @@ const { Worker } = require("bullmq");
 const IORedis = require("ioredis");
 const axios = require("axios");
 const { markRunning, markCompleted, markFailed } = require("./jobsStore.js");
+const { runFlow } = require("./runFlow.js");
 
 const connection = new IORedis({
   host: "127.0.0.1",
@@ -23,29 +24,31 @@ const worker = new Worker(
       await markRunning(batchId);
 
       const delay = Math.floor(Math.random() * 2000) + 500;
-      console.log(`Waiting ${delay}ms for ${execData.username}`);
+      console.log(
+        `Delaying job ${job.id} for ${delay}ms to simulate processing time...`,
+      );
       await sleep(delay);
 
-      console.log("Running:", execData.username);
-
-      const response = await axios.post(
-        "http://localhost:3005/run-test",
-        execData,
-      );
+      const result = await runFlow({
+        username: execData.username,
+        password: execData.password,
+        search: execData.search,
+        contextConfig: execData.context,
+      });
 
       await markCompleted(batchId, {
         user: execData.username,
         status: "success",
-        data: response.data,
       });
 
-      return response.data;
+      return result;
     } catch (err) {
       await markFailed(batchId, {
         user: execData.username,
         status: "failed",
         error: err.message,
       });
+
       throw err;
     }
   },
@@ -69,6 +72,7 @@ worker.on("completed", (job) => {
 
 worker.on("failed", (job, err) => {
   console.log(`❌ Job failed: ${job.id}`);
+  console.error("Error details:", err);
 });
 
 worker.on("error", (err) => {
