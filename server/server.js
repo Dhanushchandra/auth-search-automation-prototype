@@ -5,6 +5,10 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const { v4: uuidv4 } = require("uuid");
+
+const { automationQueue } = require("./queue.js");
+const { createBatch, getBatch } = require("./jobsStore.js");
 
 // Load user and profile data
 
@@ -209,6 +213,62 @@ app.post("/inspect", (req, res) => {
 //   });
 // });
 
+// app.post("/submit", async (req, res) => {
+//   const { search, count } = req.body;
+
+//   const map = loadMap();
+//   const selectedUsers = users.slice(0, count);
+
+//   const executions = selectedUsers.map((user) => ({
+//     username: user.username,
+//     password: user.password,
+//     search,
+//     context: getProfileForUser(user, map),
+//   }));
+
+//   saveMap(map); // ✅ save once after processing all users
+
+//   const results = [];
+
+//   console.log("Executions count:", executions.length);
+
+//   // 🔹 helper sleep
+//   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+//   for (const execData of executions) {
+//     try {
+//       // random delay (500ms → 2500ms)
+//       const delay = Math.floor(Math.random() * 2000) + 500;
+//       console.log(`Waiting ${delay}ms before triggering ${execData.username}`);
+//       await sleep(delay);
+
+//       console.log("Triggering for:", execData.username);
+
+//       const response = await axios.post(
+//         "http://localhost:3005/run-test",
+//         execData,
+//       );
+
+//       results.push({
+//         user: execData.username,
+//         status: "success",
+//         data: response.data,
+//       });
+//     } catch (err) {
+//       results.push({
+//         user: execData.username,
+//         status: "failed",
+//         error: err.message,
+//       });
+//     }
+//   }
+
+//   res.json({
+//     message: "Automation executed",
+//     results,
+//   });
+// });
+
 app.post("/submit", async (req, res) => {
   const { search, count } = req.body;
 
@@ -222,47 +282,34 @@ app.post("/submit", async (req, res) => {
     context: getProfileForUser(user, map),
   }));
 
-  saveMap(map); // ✅ save once after processing all users
+  saveMap(map);
 
-  const results = [];
+  const batchId = uuidv4();
 
-  console.log("Executions count:", executions.length);
-
-  // 🔹 helper sleep
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  await createBatch(batchId, executions.length); // ✅ Redis
 
   for (const execData of executions) {
-    try {
-      // random delay (500ms → 2500ms)
-      const delay = Math.floor(Math.random() * 2000) + 500;
-      console.log(`Waiting ${delay}ms before triggering ${execData.username}`);
-      await sleep(delay);
-
-      console.log("Triggering for:", execData.username);
-
-      const response = await axios.post(
-        "http://localhost:3005/run-test",
-        execData,
-      );
-
-      results.push({
-        user: execData.username,
-        status: "success",
-        data: response.data,
-      });
-    } catch (err) {
-      results.push({
-        user: execData.username,
-        status: "failed",
-        error: err.message,
-      });
-    }
+    await automationQueue.add("run-test", {
+      batchId,
+      execData,
+    });
   }
 
   res.json({
-    message: "Automation executed",
-    results,
+    message: "Jobs queued",
+    batchId,
+    total: executions.length,
   });
+});
+
+app.get("/status/:batchId", async (req, res) => {
+  const batch = await getBatch(req.params.batchId);
+
+  if (!batch) {
+    return res.status(404).json({ error: "Batch not found" });
+  }
+
+  res.json(batch);
 });
 
 app.listen(3005, () => {
