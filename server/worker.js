@@ -38,12 +38,15 @@ const worker = new Worker(
         status: "success",
         data: response.data,
       });
+
+      return response.data;
     } catch (err) {
       await markFailed(batchId, {
         user: execData.username,
         status: "failed",
         error: err.message,
       });
+      throw err;
     }
   },
   {
@@ -65,7 +68,7 @@ worker.on("completed", (job) => {
 });
 
 worker.on("failed", (job, err) => {
-  console.log(`❌ Job failed: ${job.id}`, err.message);
+  console.log(`❌ Job failed: ${job.id}`);
 });
 
 worker.on("error", (err) => {

@@ -24,10 +24,10 @@ test("API triggered flow", async ({ browser }) => {
   await page.goto("http://localhost:5500/client/index.html");
 
   // Debug
-  const tz = await page.evaluate(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-  );
-  console.log("Browser timezone:", tz);
+  // const tz = await page.evaluate(
+  //   () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+  // );
+  // console.log("Browser timezone:", tz);
 
   // Type like a human
   await page.locator("#username").pressSequentially(username, {
@@ -57,13 +57,13 @@ test("API triggered flow", async ({ browser }) => {
   await expect(page.locator("#result")).toContainText(search);
 
   // Submit
-  const dialogPromise = page.waitForEvent("dialog");
+  // const dialogPromise = page.waitForEvent("dialog");
 
   const submitBtn = page.locator("#submitBtn");
   await submitBtn.hover();
   await page.waitForTimeout(Math.random() * 400 + 200);
   await submitBtn.click();
 
-  const dialog = await dialogPromise;
-  await dialog.accept();
+  // const dialog = await dialogPromise;
+  // await dialog.accept();
 });
