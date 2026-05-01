@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const connectDB = require("./db");
 const User = require("./models/User");
 const { getProfileForUser } = require("./services/profileService");
+const redis = require("./redisClient");
 
 const { automationQueue } = require("./queue");
 const { createBatch, getBatch } = require("./jobsStore");
@@ -31,6 +32,8 @@ app.post("/submit", async (req, res) => {
   for (const user of users) {
     const context = await getProfileForUser(user);
 
+    const jobId = `batch_${batchId}_user_${user._id}`;
+
     await automationQueue.add(
       "user-automation",
       {
@@ -43,12 +46,16 @@ app.post("/submit", async (req, res) => {
         },
       },
       {
+        jobId: `${jobId}`,
         timeout: 60000,
         retry: 1,
         removeOnComplete: 100,
         removeOnFail: 50,
       },
     );
+
+    await redis.sadd(`batch:${batchId}:jobs`, jobId);
+    await redis.expire(`batch:${batchId}:jobs`, 60 * 60 * 24);
   }
 
   res.json({
