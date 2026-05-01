@@ -1,5 +1,5 @@
 const { chromium } = require("playwright");
-const { getBrowser } = require("./browser");
+const { getBrowser } = require("../browser");
 
 async function runFlow({ username, password, search, contextConfig }) {
   const browser = await getBrowser();

@@ -19,39 +19,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 connectDB();
 
-app.post("/run-test", (req, res) => {
-  const { username, password, search, context } = req.body;
-
-  exec(
-    "npx playwright test",
-    {
-      env: {
-        ...process.env,
-        TEST_USERNAME: username,
-        TEST_PASSWORD: password,
-        TEST_SEARCH: search,
-        TEST_CONTEXT: JSON.stringify(context || {}),
-      },
-    },
-    (error, stdout, stderr) => {
-      const failed = stdout.includes("failed");
-
-      if (error || failed) {
-        return res.status(500).json({
-          status: "failed",
-          error: error?.message,
-          details: stdout || stderr,
-        });
-      }
-
-      res.json({
-        status: "passed",
-        details: stdout,
-      });
-    },
-  );
-});
-
 app.post("/submit", async (req, res) => {
   const { search, count } = req.body;
 

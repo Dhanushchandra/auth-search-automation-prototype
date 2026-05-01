@@ -2,7 +2,7 @@ const { Worker } = require("bullmq");
 const IORedis = require("ioredis");
 const axios = require("axios");
 const { markRunning, markCompleted, markFailed } = require("./jobsStore.js");
-const { runFlow } = require("./runFlow.js");
+const { runFlow } = require("./automation/runFlow.js");
 
 const connection = new IORedis({
   host: "127.0.0.1",
