@@ -24,7 +24,7 @@ async function markCompleted(batchId, result) {
   await redis.hincrby(getBatchKey(batchId), "completed", 1);
   await redis.hincrby(getBatchKey(batchId), "running", -1);
 
-  await redis.hset(getResultKey(batchId), result.user, result.status);
+  await redis.hset(getResultKey(batchId), result.jobId, result.status);
   await redis.expire(getResultKey(batchId), BATCH_TTL);
 }
 
@@ -34,7 +34,7 @@ async function markFailed(batchId, error) {
 
   await redis.hset(
     getResultKey(batchId),
-    error.user,
+    error.jobId,
     JSON.stringify({
       status: error.status,
       error: error.error,

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { submitAutomation } = require("./automation.service");
-const { getBatch } = require("../batch/jobsStore");
+const { getBatch } = require("../batch/batch.service");
 
 router.post("/submit", async (req, res) => {
   try {

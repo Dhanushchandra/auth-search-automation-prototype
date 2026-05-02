@@ -1,33 +1,27 @@
 const { v4: uuidv4 } = require("uuid");
 const { addAutomationJob } = require("../../queues/automation.queue");
-const { createBatch } = require("../batch/jobsStore");
-const User = require("../../models/User");
-const { getProfileForUser } = require("../../services/profileService");
+const { createBatch } = require("../batch/batch.service");
 
 const submitAutomation = async ({ search, count }) => {
-  const users = await User.find().limit(count);
-
   const batchId = uuidv4();
 
-  await createBatch(batchId, users.length);
+  await createBatch(batchId, count);
 
-  for (const user of users) {
-    const context = await getProfileForUser(user);
+  await Promise.all(
+    Array.from({ length: count }).map((_, i) => {
+      const jobId = `batch_${batchId}_job_${i + 1}`;
 
-    const jobId = `batch_${batchId}_user_${user._id}`;
-
-    await addAutomationJob({
-      batchId,
-      jobId,
-      user,
-      search,
-      context,
-    });
-  }
+      return addAutomationJob({
+        batchId,
+        jobId,
+        search,
+      });
+    }),
+  );
 
   return {
     batchId,
-    total: users.length,
+    total: count,
   };
 };
 

@@ -11,10 +11,8 @@ const addAutomationJob = async ({ batchId, jobId, user, search, context }) => {
     {
       batchId,
       execData: {
-        username: user.username,
-        password: user.password,
         search,
-        context,
+        jobId,
       },
     },
     {

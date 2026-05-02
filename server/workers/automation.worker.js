@@ -1,49 +1,34 @@
 const { Worker } = require("bullmq");
-const IORedis = require("ioredis");
-const axios = require("axios");
 const {
   markRunning,
   markCompleted,
   markFailed,
-} = require("../modules/batch/jobsStore.js");
+} = require("../modules/batch/batch.service.js");
 const { runFlow } = require("../automation/runFlow.js");
 const redis = require("../config/redis");
-
-// helper delay
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const worker = new Worker(
   "automation",
   async (job) => {
     console.log("🔥 JOB RECEIVED:", job.id);
 
-    const { batchId, execData } = job.data;
+    const { batchId } = job.data;
 
     try {
       await markRunning(batchId);
 
-      const delay = Math.floor(Math.random() * 2000) + 500;
-      console.log(
-        `Delaying job ${job.id} for ${delay}ms to simulate processing time...`,
-      );
-      await sleep(delay);
-
-      const result = await runFlow({
-        username: execData.username,
-        password: execData.password,
-        search: execData.search,
-        contextConfig: execData.context,
-      });
+      // 👇 simplified flow
+      const result = await runFlow();
 
       await markCompleted(batchId, {
-        user: execData.username,
+        jobId: job.id,
         status: "success",
       });
 
       return result;
     } catch (err) {
       await markFailed(batchId, {
-        user: execData.username,
+        jobId: job.id,
         status: "failed",
         error: err.message,
       });

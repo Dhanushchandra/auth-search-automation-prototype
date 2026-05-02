@@ -1,63 +1,19 @@
 const { getBrowser } = require("../config/playwright.browser");
 
-async function runFlow({ username, password, search, contextConfig }) {
+async function runFlow() {
   const browser = await getBrowser();
-  // console.log("🚀 Starting flow for user:", username);
-  // console.log("Context config:", contextConfig);
-  const context = await browser.newContext({
-    ...contextConfig,
-  });
 
-  await context.route("**/*", (route) => {
-    if (route.request().resourceType() === "image") {
-      return route.abort();
-    }
-    route.continue();
-  });
-
+  const context = await browser.newContext();
   const page = await context.newPage();
 
   await page.goto("http://localhost:5500/server/client/index.html");
 
-  // Login
-  await page.locator("#username").pressSequentially(username, { delay: 120 });
-  await page.locator("#password").pressSequentially(password, { delay: 110 });
-
-  await page.waitForTimeout(Math.random() * 500 + 300);
-
-  const loginBtn = page.locator("button[type='submit']");
-  await loginBtn.hover();
-  await loginBtn.click();
-
-  // Search
-  await page.locator("#searchInput").pressSequentially(search, {
-    delay: 100 + Math.random() * 50,
-  });
-
-  await page.waitForTimeout(Math.random() * 500 + 300);
-
-  const searchBtn = page.locator("#searchBtn");
-  await searchBtn.hover();
-  await searchBtn.click();
-
-  // Validate
-  await page.waitForSelector("#result");
-  const resultText = await page.locator("#result").textContent();
-
-  if (!resultText.includes(search)) {
-    throw new Error("Search validation failed");
-  }
-
-  // Submit
-
-  const submitBtn = page.locator("#submitBtn");
-  await submitBtn.hover();
-  await page.waitForTimeout(Math.random() * 400 + 200);
-  await submitBtn.click();
+  // optional: wait a bit to ensure page loads
+  await page.waitForLoadState("load");
 
   await context.close();
 
-  return { status: "passed" };
+  return { status: "completed" };
 }
 
 module.exports = { runFlow };
