@@ -1,16 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const { exec } = require("child_process");
-const { v4: uuidv4 } = require("uuid");
 
-const connectDB = require("./db");
-const User = require("./models/User");
-const { getProfileForUser } = require("./services/profileService");
-const redis = require("./redisClient");
+const connectDB = require("./config/db");
 
-const { automationQueue } = require("./queue");
-const { createBatch, getBatch } = require("./jobsStore");
+const automationRoutes = require("./modules/automation/automation.routes");
 
 const app = express();
 
@@ -20,58 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 connectDB();
 
-app.post("/submit", async (req, res) => {
-  const { search, count } = req.body;
-
-  const users = await User.find().limit(count);
-
-  const batchId = uuidv4();
-
-  await createBatch(batchId, users.length);
-
-  for (const user of users) {
-    const context = await getProfileForUser(user);
-
-    const jobId = `batch_${batchId}_user_${user._id}`;
-
-    await automationQueue.add(
-      "user-automation",
-      {
-        batchId,
-        execData: {
-          username: user.username,
-          password: user.password,
-          search,
-          context,
-        },
-      },
-      {
-        jobId: `${jobId}`,
-        timeout: 60000,
-        retry: 1,
-        removeOnComplete: 100,
-        removeOnFail: 50,
-      },
-    );
-
-    await redis.sadd(`batch:${batchId}:jobs`, jobId);
-    await redis.expire(`batch:${batchId}:jobs`, 60 * 60 * 24);
-  }
-
-  res.json({
-    message: "Jobs queued",
-    batchId,
-    total: users.length,
-  });
-});
-
-app.get("/status/:batchId", async (req, res) => {
-  const batch = await getBatch(req.params.batchId);
-
-  if (!batch) return res.status(404).json({ error: "Not found" });
-
-  res.json(batch);
-});
+app.use("/", automationRoutes);
 
 app.listen(3005, () => {
   console.log("Server running on http://localhost:3005");
