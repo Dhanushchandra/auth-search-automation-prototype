@@ -1,20 +1,19 @@
 const { Worker } = require("bullmq");
 const IORedis = require("ioredis");
 const axios = require("axios");
-const { markRunning, markCompleted, markFailed } = require("./jobsStore.js");
-const { runFlow } = require("./automation/runFlow.js");
-
-const connection = new IORedis({
-  host: "127.0.0.1",
-  port: 6379,
-  maxRetriesPerRequest: null,
-});
+const {
+  markRunning,
+  markCompleted,
+  markFailed,
+} = require("../modules/batch/jobsStore.js");
+const { runFlow } = require("../automation/runFlow.js");
+const redis = require("../config/redis");
 
 // helper delay
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const worker = new Worker(
-  "automation-queue",
+  "automation",
   async (job) => {
     console.log("🔥 JOB RECEIVED:", job.id);
 
@@ -53,7 +52,7 @@ const worker = new Worker(
     }
   },
   {
-    connection,
+    connection: redis,
     concurrency: 3,
   },
 );

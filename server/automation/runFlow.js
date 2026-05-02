@@ -1,5 +1,4 @@
-const { chromium } = require("playwright");
-const { getBrowser } = require("../browser");
+const { getBrowser } = require("../config/playwright.browser");
 
 async function runFlow({ username, password, search, contextConfig }) {
   const browser = await getBrowser();
@@ -18,7 +17,7 @@ async function runFlow({ username, password, search, contextConfig }) {
 
   const page = await context.newPage();
 
-  await page.goto("http://localhost:5500/client/index.html");
+  await page.goto("http://localhost:5500/server/client/index.html");
 
   // Login
   await page.locator("#username").pressSequentially(username, { delay: 120 });
