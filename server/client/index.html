@@ -46,6 +46,42 @@
     <script>
       const params = new URLSearchParams(window.location.search);
       const query = params.get("query");
+      const behaviorStartedAt = performance.now();
+      const behavior = {
+        mouse: {
+          moves: 0,
+          distancePx: 0,
+          lastX: null,
+          lastY: null,
+        },
+        scroll: {
+          events: 0,
+          maxDepthRatio: 0,
+        },
+        keyboard: {
+          keyEvents: 0,
+          typedFields: 0,
+          intervals: [],
+          lastKeyAt: null,
+          fields: new Set(),
+        },
+        pointer: {
+          clicks: 0,
+          pointerDowns: 0,
+          touches: 0,
+        },
+        focus: {
+          focusEvents: 0,
+          blurEvents: 0,
+        },
+        visibility: {
+          hiddenEvents: 0,
+        },
+        form: {
+          submits: 0,
+        },
+      };
+      let behaviorSent = false;
 
       async function captureFingerprint() {
         const payload = {
@@ -92,10 +128,163 @@
         console.log(`Captured request ${data.requestId}`);
       }
 
+      function updateScrollDepth() {
+        const scrollTop =
+          window.scrollY || document.documentElement.scrollTop || 0;
+        const scrollable =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const depth = scrollable > 0 ? scrollTop / scrollable : 0;
+
+        behavior.scroll.maxDepthRatio = Math.max(
+          behavior.scroll.maxDepthRatio,
+          Number(depth.toFixed(3)),
+        );
+      }
+
+      function buildBehaviorPayload(event) {
+        const keyIntervals = behavior.keyboard.intervals;
+        const averageKeyIntervalMs = keyIntervals.length
+          ? Math.round(
+              keyIntervals.reduce((sum, value) => sum + value, 0) /
+                keyIntervals.length,
+            )
+          : null;
+
+        return {
+          page: window.location.href,
+          event,
+          timestamp: new Date().toISOString(),
+          sessionMs: Math.round(performance.now() - behaviorStartedAt),
+          mouse: {
+            moves: behavior.mouse.moves,
+            distancePx: Math.round(behavior.mouse.distancePx),
+          },
+          scroll: {
+            events: behavior.scroll.events,
+            maxDepthRatio: behavior.scroll.maxDepthRatio,
+          },
+          keyboard: {
+            keyEvents: behavior.keyboard.keyEvents,
+            typedFields: behavior.keyboard.fields.size,
+            averageKeyIntervalMs,
+          },
+          pointer: behavior.pointer,
+          focus: behavior.focus,
+          visibility: behavior.visibility,
+          form: behavior.form,
+        };
+      }
+
+      async function sendBehavior(event, force = false) {
+        if (behaviorSent && !force) return;
+
+        behaviorSent = true;
+
+        const res = await fetch("http://127.0.0.1:3005/behavior", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          keepalive: true,
+          body: JSON.stringify(buildBehaviorPayload(event)),
+        });
+
+        const data = await res.json();
+        console.log(
+          `Behavior score ${data.botScore} (${data.classification})`,
+        );
+      }
+
+      window.addEventListener("mousemove", (event) => {
+        behavior.mouse.moves += 1;
+
+        if (behavior.mouse.lastX !== null && behavior.mouse.lastY !== null) {
+          const dx = event.clientX - behavior.mouse.lastX;
+          const dy = event.clientY - behavior.mouse.lastY;
+          behavior.mouse.distancePx += Math.hypot(dx, dy);
+        }
+
+        behavior.mouse.lastX = event.clientX;
+        behavior.mouse.lastY = event.clientY;
+      });
+
+      window.addEventListener(
+        "scroll",
+        () => {
+          behavior.scroll.events += 1;
+          updateScrollDepth();
+        },
+        { passive: true },
+      );
+
+      window.addEventListener("keydown", (event) => {
+        const now = performance.now();
+
+        behavior.keyboard.keyEvents += 1;
+
+        if (event.target?.id) {
+          behavior.keyboard.fields.add(event.target.id);
+        }
+
+        if (behavior.keyboard.lastKeyAt !== null) {
+          behavior.keyboard.intervals.push(
+            Math.round(now - behavior.keyboard.lastKeyAt),
+          );
+        }
+
+        behavior.keyboard.lastKeyAt = now;
+      });
+
+      window.addEventListener("pointerdown", (event) => {
+        behavior.pointer.pointerDowns += 1;
+
+        if (event.pointerType === "touch") {
+          behavior.pointer.touches += 1;
+        }
+      });
+
+      window.addEventListener("click", () => {
+        behavior.pointer.clicks += 1;
+      });
+
+      window.addEventListener("focus", () => {
+        behavior.focus.focusEvents += 1;
+      });
+
+      window.addEventListener("blur", () => {
+        behavior.focus.blurEvents += 1;
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          behavior.visibility.hiddenEvents += 1;
+          sendBehavior("page.hidden", true).catch(() => {});
+        }
+      });
+
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          behavior.form.submits += 1;
+          await sendBehavior("form.submit", true).catch(() => {});
+
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+
+          window.location.href = `next.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        });
+
       window.addEventListener("load", () => {
         captureFingerprint().catch((error) => {
           console.error("Fingerprint capture failed", error);
         });
+
+        window.setTimeout(() => {
+          sendBehavior("observation.window").catch((error) => {
+            console.error("Behavior capture failed", error);
+          });
+        }, 2500);
       });
     </script>
   </body>
