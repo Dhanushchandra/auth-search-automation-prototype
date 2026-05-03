@@ -6,11 +6,12 @@ const {
 } = require("../modules/batch/batch.service.js");
 const { runFlow } = require("../automation/runFlow.js");
 const redis = require("../config/redis");
+const logger = require("../utils/logger");
 
 const worker = new Worker(
   "automation",
   async (job) => {
-    console.log("🔥 JOB RECEIVED:", job.id);
+    logger.info("job.received", { jobId: job.id });
 
     const { batchId } = job.data;
 
@@ -43,22 +44,21 @@ const worker = new Worker(
 );
 
 worker.on("ready", () => {
-  console.log("✅ Worker is ready and listening...");
+  logger.info("worker.ready", { queue: "automation" });
 });
 
 worker.on("active", (job) => {
-  console.log(`🚀 Job started: ${job.id}`);
+  logger.info("job.started", { jobId: job.id });
 });
 
 worker.on("completed", (job) => {
-  console.log(`✅ Job completed: ${job.id}`);
+  logger.info("job.completed", { jobId: job.id });
 });
 
 worker.on("failed", (job, err) => {
-  console.log(`❌ Job failed: ${job.id}`);
-  console.error("Error details:", err);
+  logger.error("job.failed", { jobId: job.id, error: err });
 });
 
 worker.on("error", (err) => {
-  console.error("💥 Worker error:", err);
+  logger.error("worker.error", { error: err });
 });

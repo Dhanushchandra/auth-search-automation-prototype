@@ -36,40 +36,47 @@
         : "No search query";
 
       async function handleSubmit() {
-        console.log("Submit button clicked");
-        // const params = new URLSearchParams(window.location.search);
-        // const query = params.get("query");
+        const payload = {
+          query,
+          page: window.location.href,
+          timestamp: new Date().toISOString(),
+          screen: {
+            width: window.screen.width,
+            height: window.screen.height,
+            availWidth: window.screen.availWidth,
+            availHeight: window.screen.availHeight,
+            colorDepth: window.screen.colorDepth,
+            pixelDepth: window.screen.pixelDepth,
+          },
+          viewport: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio,
+          },
+          navigator: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            languages: navigator.languages,
+            platform: navigator.platform,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack,
+            maxTouchPoints: navigator.maxTouchPoints,
+          },
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
 
-        // const payload = {
-        //   query,
-        //   timestamp: new Date().toISOString(),
-        //   screen: {
-        //     width: window.screen.width,
-        //     height: window.screen.height,
-        //   },
-        //   navigator: {
-        //     userAgent: navigator.userAgent,
-        //     language: navigator.language,
-        //     platform: navigator.platform,
-        //     hardwareConcurrency: navigator.hardwareConcurrency,
-        //     deviceMemory: navigator.deviceMemory,
-        //     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        //     cookieEnabled: navigator.cookieEnabled,
-        //     doNotTrack: navigator.doNotTrack,
-        //     maxTouchPoints: navigator.maxTouchPoints,
-        //   },
-        // };
+        const res = await fetch("http://127.0.0.1:3005/inspect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-        // const res = await fetch("http://127.0.0.1:3005/inspect", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify(payload),
-        // });
-
-        // const data = await res.json();
-        // alert("Sent to backend ✅");
+        const data = await res.json();
+        alert(`Captured request ${data.requestId}`);
       }
     </script>
   </body>

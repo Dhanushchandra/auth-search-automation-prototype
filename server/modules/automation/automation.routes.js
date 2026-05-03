@@ -3,6 +3,7 @@ const router = express.Router();
 
 const { submitAutomation } = require("./automation.service");
 const { getBatch } = require("../batch/batch.service");
+const logger = require("../../utils/logger");
 
 router.post("/submit", async (req, res) => {
   try {
@@ -15,7 +16,10 @@ router.post("/submit", async (req, res) => {
       ...result,
     });
   } catch (err) {
-    console.error(err);
+    logger.error("automation.submit.failed", {
+      requestId: req.id,
+      error: err,
+    });
     res.status(500).json({ error: "Something went wrong" });
   }
 });
@@ -30,6 +34,11 @@ router.get("/status/:batchId", async (req, res) => {
 
     res.json(batch);
   } catch (err) {
+    logger.error("automation.status.failed", {
+      requestId: req.id,
+      batchId: req.params.batchId,
+      error: err,
+    });
     res.status(500).json({ error: "Error fetching batch" });
   }
 });

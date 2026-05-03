@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const logger = require("../utils/logger");
 
 let browser;
 
@@ -9,7 +10,7 @@ async function getBrowser() {
       args: ["--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"],
     });
 
-    console.log("🔥 Browser launched (singleton)");
+    logger.info("browser.launched", { engine: "chromium", headless: true });
   }
 
   return browser;

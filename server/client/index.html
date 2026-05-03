@@ -44,16 +44,59 @@
     </div>
 
     <script>
-      document
-        .getElementById("loginForm")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get("query");
 
-          const username = document.getElementById("username").value;
-          const password = document.getElementById("password").value;
+      async function captureFingerprint() {
+        const payload = {
+          query,
+          page: window.location.href,
+          event: "index.loaded",
+          timestamp: new Date().toISOString(),
+          screen: {
+            width: window.screen.width,
+            height: window.screen.height,
+            availWidth: window.screen.availWidth,
+            availHeight: window.screen.availHeight,
+            colorDepth: window.screen.colorDepth,
+            pixelDepth: window.screen.pixelDepth,
+          },
+          viewport: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio,
+          },
+          navigator: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            languages: navigator.languages,
+            platform: navigator.platform,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack,
+            maxTouchPoints: navigator.maxTouchPoints,
+          },
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
 
-          window.location.href = `next.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+        const res = await fetch("http://127.0.0.1:3005/inspect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         });
+
+        const data = await res.json();
+        console.log(`Captured request ${data.requestId}`);
+      }
+
+      window.addEventListener("load", () => {
+        captureFingerprint().catch((error) => {
+          console.error("Fingerprint capture failed", error);
+        });
+      });
     </script>
   </body>
 </html>
