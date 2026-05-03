@@ -34,6 +34,9 @@ const streams = {
   fingerprint: fs.createWriteStream(path.join(LOG_DIR, "fingerprint.log"), {
     flags: "a",
   }),
+  behavior: fs.createWriteStream(path.join(LOG_DIR, "behavior.log"), {
+    flags: "a",
+  }),
 };
 
 function shouldLog(level) {
@@ -104,6 +107,7 @@ module.exports = {
   debug: (event, payload) => log("debug", event, payload),
   error: (event, payload = {}) =>
     log("error", event, { ...payload, error: normalizeError(payload.error) }),
+  behavior: (event, payload) => write("behavior", "info", event, payload),
   fingerprint: (event, payload) => write("fingerprint", "info", event, payload),
   http: (event, payload) => write("http", "http", event, payload),
   info: (event, payload) => log("info", event, payload),

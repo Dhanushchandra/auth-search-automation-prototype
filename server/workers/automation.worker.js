@@ -8,10 +8,33 @@ const { runFlow } = require("../automation/runFlow.js");
 const redis = require("../config/redis");
 const logger = require("../utils/logger");
 
+const jobStartTimes = new Map();
+
+function getJobDurationMs(jobId) {
+  const startedAt = jobStartTimes.get(jobId);
+
+  if (!startedAt) {
+    return undefined;
+  }
+
+  jobStartTimes.delete(jobId);
+  return Math.round(Number(process.hrtime.bigint() - startedAt) / 1e6);
+}
+
+function workerLog(payload = {}) {
+  return {
+    service: "worker",
+    ...payload,
+  };
+}
+
 const worker = new Worker(
   "automation",
   async (job) => {
-    logger.info("job.received", { jobId: job.id });
+    logger.info(
+      "job.received",
+      workerLog({ jobId: job.id, batchId: job.data.batchId }),
+    );
 
     const { batchId } = job.data;
 
@@ -19,7 +42,7 @@ const worker = new Worker(
       await markRunning(batchId);
 
       // 👇 simplified flow
-      const result = await runFlow();
+      const result = await runFlow("likely_human");
 
       await markCompleted(batchId, {
         jobId: job.id,
@@ -44,21 +67,41 @@ const worker = new Worker(
 );
 
 worker.on("ready", () => {
-  logger.info("worker.ready", { queue: "automation" });
+  logger.info("worker.ready", workerLog({ queue: "automation" }));
 });
 
 worker.on("active", (job) => {
-  logger.info("job.started", { jobId: job.id });
+  jobStartTimes.set(job.id, process.hrtime.bigint());
+
+  logger.info(
+    "job.started",
+    workerLog({ jobId: job.id, batchId: job.data.batchId }),
+  );
 });
 
 worker.on("completed", (job) => {
-  logger.info("job.completed", { jobId: job.id });
+  logger.info(
+    "job.completed",
+    workerLog({
+      jobId: job.id,
+      batchId: job.data.batchId,
+      durationMs: getJobDurationMs(job.id),
+    }),
+  );
 });
 
 worker.on("failed", (job, err) => {
-  logger.error("job.failed", { jobId: job.id, error: err });
+  logger.error(
+    "job.failed",
+    workerLog({
+      jobId: job?.id,
+      batchId: job?.data?.batchId,
+      durationMs: job ? getJobDurationMs(job.id) : undefined,
+      error: err,
+    }),
+  );
 });
 
 worker.on("error", (err) => {
-  logger.error("worker.error", { error: err });
+  logger.error("worker.error", workerLog({ error: err }));
 });
